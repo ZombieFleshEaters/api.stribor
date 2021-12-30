@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>8f965a0a-8923-4225-b27e-6e0d8e0b9ae8</UserSecretsId>
 	 <GenerateDocumentationFile>False</GenerateDocumentationFile>
+	 <PublishWithAspNetCoreTargetManifest>false</PublishWithAspNetCoreTargetManifest>
   </PropertyGroup>
 
   <ItemGroup>

@@ -850,11 +850,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\matad\\source\\repos\\api.stribor\\api.stribor\\api.stribor.csproj",
+      "projectUniqueName": "C:\\Users\\matad\\source\\repos\\api.stribor\\api.stribor\\api.stribor\\api.stribor.csproj",
       "projectName": "api.stribor",
-      "projectPath": "C:\\Users\\matad\\source\\repos\\api.stribor\\api.stribor\\api.stribor.csproj",
+      "projectPath": "C:\\Users\\matad\\source\\repos\\api.stribor\\api.stribor\\api.stribor\\api.stribor.csproj",
       "packagesPath": "C:\\Users\\matad\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\matad\\source\\repos\\api.stribor\\api.stribor\\obj\\",
+      "outputPath": "C:\\Users\\matad\\source\\repos\\api.stribor\\api.stribor\\api.stribor\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\matad\\AppData\\Roaming\\NuGet\\NuGet.Config",

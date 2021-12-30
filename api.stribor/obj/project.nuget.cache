@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "s1YfC2q0L7fy/Nz0E7LNxNLnZbJQw5oSObjku/X8ZaDauVIupcGDJkS6UCEWSW/QPPUDfCnM6hadV8oKqtnfig==",
+  "dgSpecHash": "zyCX2uMy6/++YlQOULrMQL/tcIOcrCbRvguuR0hMdHDYi80VMLaN7u1kuU3LeKXTA9wU7Qyw5gBDVWwcv5TpdA==",
   "success": true,
-  "projectFilePath": "C:\\Users\\matad\\source\\repos\\api.stribor\\api.stribor\\api.stribor.csproj",
+  "projectFilePath": "C:\\Users\\matad\\source\\repos\\api.stribor\\api.stribor\\api.stribor\\api.stribor.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\matad\\.nuget\\packages\\microsoft.entityframeworkcore\\6.0.0\\microsoft.entityframeworkcore.6.0.0.nupkg.sha512",
     "C:\\Users\\matad\\.nuget\\packages\\microsoft.entityframeworkcore.abstractions\\6.0.0\\microsoft.entityframeworkcore.abstractions.6.0.0.nupkg.sha512",
