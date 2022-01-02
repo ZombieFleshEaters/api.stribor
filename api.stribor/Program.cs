@@ -237,7 +237,7 @@ app.MapPut("/workout/{id}", async ([FromHeader] string apiKey, string id, Workou
         return StatusCodes.Status400BadRequest;
     if (!await db.Workout.AnyAsync(a => a.WorkoutId == id))
         return StatusCodes.Status416RangeNotSatisfiable;
-    if(!await db.Plan.AllAsync(a => a.PlanId == workout.PlanId))
+    if (!await db.Plan.AnyAsync(a => a.PlanId == workout.PlanId))
         return StatusCodes.Status417ExpectationFailed;
 
     workout.WorkoutId = id;
@@ -527,7 +527,7 @@ app.MapPost("/muscle", async ([FromHeader] string apiKey, Muscle muscle, Stribor
         return StatusCodes.Status401Unauthorized;
     if (muscle == null)
         return StatusCodes.Status400BadRequest;
-    if(String.IsNullOrEmpty(muscle.Name))
+    if (String.IsNullOrEmpty(muscle.Name))
         return StatusCodes.Status400BadRequest;
     if (muscle.MuscleCategoryId is null || !Guid.TryParse(muscle.MuscleCategoryId.ToString(), out Guid PlanId))
         return StatusCodes.Status400BadRequest;
@@ -599,8 +599,7 @@ app.MapPost("/muscle-category", async ([FromHeader] string apiKey, MuscleCategor
         return StatusCodes.Status400BadRequest;
     if (String.IsNullOrEmpty(muscleCategory.Name))
         return StatusCodes.Status400BadRequest;
-
-    if(await db.MuscleCategory.AnyAsync(a => a.Name == muscleCategory.Name))
+    if (await db.MuscleCategory.AnyAsync(a => a.Name == muscleCategory.Name))
         return StatusCodes.Status416RequestedRangeNotSatisfiable;
 
     muscleCategory.MuscleCategoryId = Guid.NewGuid().ToString();
