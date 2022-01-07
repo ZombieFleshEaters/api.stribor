@@ -111,6 +111,28 @@ namespace api.stribor
     }
     #endregion
 
+    #region "SetExerciseList"
+    public class SetExerciseList
+    {
+        [Required]
+        public string SetId { get; set; }
+        public string SetName { get; set; }
+
+        [Required]
+        public string ExerciseId { get; set; }
+        public int Order { get; set; }
+        public string Duration { get; set; }
+        public string Unit { get; set; }
+        public int Count { get; set; }
+        public string ExerciseName { get; set; }
+        public string Description { get; set; }
+
+        [DataType(DataType.ImageUrl)]
+        public string ImageUrl { get; set; }
+    }
+
+    #endregion
+
     #region "Sink list"
     public class PlanList
     {
