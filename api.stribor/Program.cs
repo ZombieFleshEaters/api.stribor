@@ -172,6 +172,30 @@ app.MapPut("/plan/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, 
 .ProducesValidationProblem(StatusCodes.Status400BadRequest)
 .ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
 .Produces(StatusCodes.Status202Accepted);
+
+app.MapDelete("/plan/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, string id, StriborDb db, IConfiguration cfg) =>
+{
+    if (String.IsNullOrEmpty(apiKey) || cfg["apiKey"] != apiKey)
+        return Results.Unauthorized();
+    if (String.IsNullOrEmpty(id) || !Guid.TryParse(id, out Guid planId))
+        return Results.BadRequest();
+
+    var plan = await db.Plan.FirstOrDefaultAsync(f => f.PlanId == id);
+
+    if (plan == null)
+        return Results.StatusCode(StatusCodes.Status416RangeNotSatisfiable);
+
+    db.Plan.Remove(plan);
+    await db.SaveChangesAsync();
+
+    return Results.Ok();
+})
+.WithName("DeletePlan")
+.WithTags("Plan")
+.ProducesValidationProblem(StatusCodes.Status401Unauthorized)
+.ProducesValidationProblem(StatusCodes.Status400BadRequest)
+.ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
+.Produces(StatusCodes.Status200OK);
 #endregion
 
 #region "Workout"
@@ -254,6 +278,31 @@ app.MapPut("/workout/{id}", async ([FromHeader(Name = "x-api-key")] string apiKe
 .ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
 .ProducesValidationProblem(StatusCodes.Status417ExpectationFailed)
 .Produces(StatusCodes.Status202Accepted);
+
+app.MapDelete("/workout/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, string id, StriborDb db, IConfiguration cfg) =>
+{
+    if (String.IsNullOrEmpty(apiKey) || cfg["apiKey"] != apiKey)
+        return Results.Unauthorized();
+    if (String.IsNullOrEmpty(id) || !Guid.TryParse(id, out Guid workoutId))
+        return Results.BadRequest();
+
+    var workout = await db.Workout.FirstOrDefaultAsync(f => f.WorkoutId == id);
+
+    if (workout == null)
+        return Results.StatusCode(StatusCodes.Status416RangeNotSatisfiable);
+
+    db.Workout.Remove(workout);
+
+    await db.SaveChangesAsync();
+    return Results.Ok();
+
+})
+.WithName("DeleteWorkout")
+.WithTags("Workout")
+.ProducesValidationProblem(StatusCodes.Status401Unauthorized)
+.ProducesValidationProblem(StatusCodes.Status400BadRequest)
+.ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
+.Produces(StatusCodes.Status200OK);
 
 #endregion
 
@@ -341,6 +390,29 @@ app.MapPut("/set/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, s
 .ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
 .ProducesValidationProblem(StatusCodes.Status417ExpectationFailed)
 .Produces(StatusCodes.Status202Accepted);
+
+app.MapDelete("/set/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, string id, StriborDb db, IConfiguration cfg) =>
+{
+    if (String.IsNullOrEmpty(apiKey) || cfg["apiKey"] != apiKey)
+        return Results.Unauthorized();
+    if (String.IsNullOrEmpty(id) || !Guid.TryParse(id, out Guid setId))
+        return Results.BadRequest();
+
+    var set = await db.Set.FirstOrDefaultAsync(f => f.SetId == id);
+
+    if (set == null)
+        return Results.StatusCode(StatusCodes.Status416RangeNotSatisfiable);
+
+    db.Set.Remove(set);
+    await db.SaveChangesAsync();
+    return Results.Ok();
+})
+.WithName("DeleteSet")
+.WithTags("Set")
+.ProducesValidationProblem(StatusCodes.Status401Unauthorized)
+.ProducesValidationProblem(StatusCodes.Status400BadRequest)
+.ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
+.Produces(StatusCodes.Status200OK);
 #endregion
 
 #region "SetExcercises"
@@ -355,6 +427,7 @@ app.MapGet("/set-exercises/{setId}", async (string setId, StriborDb db, IConfigu
                                         set=>set.SetId,
                                         (se,set) => new
                                         {
+                                            se.Id,
                                             se.SetId,
                                             set.Name,
                                             se.ExerciseId,
@@ -368,8 +441,8 @@ app.MapGet("/set-exercises/{setId}", async (string setId, StriborDb db, IConfigu
                                     ex=>ex.ExerciseId,
                                     (set,ex) => new SetExerciseList()
                                     {
+                                        Id = set.Id,
                                         SetId = set.SetId,
-                                        SetName = set.Name,
                                         ExerciseId = set.ExerciseId,
                                         Order = set.Order, 
                                         Duration = set.Duration,
@@ -390,55 +463,140 @@ app.MapGet("/set-exercises/{setId}", async (string setId, StriborDb db, IConfigu
 .ProducesValidationProblem(StatusCodes.Status400BadRequest)
 .Produces<List<SetExerciseList>>(StatusCodes.Status200OK);
 
-app.MapPost("/set-exercises", async ([FromHeader(Name = "x-api-key")] string apiKey, List<SetExercise> setExercises, StriborDb db, IConfiguration cfg) =>
+app.MapPost("/set-exercises/{setId}", async ([FromHeader(Name = "x-api-key")] string apiKey, string setId, SetExercise setExercise, StriborDb db, IConfiguration cfg) =>
 {
     if (String.IsNullOrEmpty(apiKey) || cfg["apiKey"] != apiKey)
         return Results.Unauthorized();
-    if (setExercises == null)
+
+    if (setExercise == null)
         return Results.BadRequest();
+    if (String.IsNullOrEmpty(setExercise.SetId) || !Guid.TryParse(setExercise.SetId, out Guid guidSetId))
+        return Results.BadRequest();
+    if (String.IsNullOrEmpty(setExercise.ExerciseId) || !Guid.TryParse(setExercise.ExerciseId, out Guid exerciseId))
+        return Results.BadRequest();
+    if (!await db.Set.AnyAsync(a => a.SetId == setExercise.SetId))
+        return Results.StatusCode(StatusCodes.Status417ExpectationFailed);
 
-    var hshSetIds = new HashSet<string>();
-    foreach(SetExercise setExercise in setExercises)
-    {
-        if (setExercise == null)
-            return Results.BadRequest();
-        if (String.IsNullOrEmpty(setExercise.SetId) || !Guid.TryParse(setExercise.SetId, out Guid setId))
-            return Results.BadRequest();
-        if (String.IsNullOrEmpty(setExercise.ExerciseId) || !Guid.TryParse(setExercise.ExerciseId, out Guid exerciseId))
-            return Results.BadRequest();
-        if (!await db.Set.AnyAsync(a => a.SetId == setExercise.SetId))
-            return Results.StatusCode(StatusCodes.Status417ExpectationFailed);
-        if (!await db.Exercise.AnyAsync(a => a.ExerciseId == setExercise.ExerciseId))
-            return Results.StatusCode(StatusCodes.Status417ExpectationFailed);
-        hshSetIds.Add(setExercise.SetId);
-        setExercise.Id = Guid.NewGuid().ToString();
-    }
+    var exercise = await db.Exercise.FirstOrDefaultAsync(f => f.ExerciseId == setExercise.ExerciseId);
 
-    db.RemoveRange(db.SetExercise.Where(w => hshSetIds.Contains(w.SetId)));
-    db.SetExercise.AddRange(setExercises);
+    if (exercise == null)
+        return Results.StatusCode(StatusCodes.Status417ExpectationFailed);
+
+    setExercise.Id = Guid.NewGuid().ToString();
+
+    db.SetExercise.Add(setExercise);
     await db.SaveChangesAsync();
-    return Results.Created($"/set-exercises/", setExercises);
+
+    var result = new SetExerciseList()
+    {
+        ExerciseId = setExercise.ExerciseId,
+        Id = setExercise.Id,
+        Unit = setExercise.Unit,
+        Count = setExercise.Count,
+        Duration = setExercise.Duration,
+        ExerciseName = exercise.Name,
+        Description = exercise.Description,
+        ImageUrl = exercise.ImageUrl,
+        Order = setExercise.Order,
+        SetId = setExercise.SetId
+    };
+
+    return Results.Created($"/set-exercises/{setExercise.SetId}/{setExercise.Id}", result);
 })
-.WithName("AddSetExercises")
+.WithName("UpdateSetExercise")
 .WithTags("Set exercises")
 .ProducesValidationProblem(StatusCodes.Status401Unauthorized)
 .ProducesValidationProblem(StatusCodes.Status400BadRequest)
 .ProducesValidationProblem(StatusCodes.Status417ExpectationFailed)
-.Produces(StatusCodes.Status201Created);
+.Produces<SetExerciseList>(StatusCodes.Status201Created);
+
+app.MapPut("/set-exercises/{setId}/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, string setId, string id, SetExercise setExercise, StriborDb db, IConfiguration cfg) =>
+{
+    if (String.IsNullOrEmpty(apiKey) || cfg["apiKey"] != apiKey)
+        return Results.Unauthorized();
+    if (setExercise == null)
+        return Results.BadRequest();
+    if (String.IsNullOrEmpty(setExercise.SetId) || !Guid.TryParse(setExercise.SetId, out Guid guidSetId))
+        return Results.BadRequest();
+    if (String.IsNullOrEmpty(setExercise.ExerciseId) || !Guid.TryParse(setExercise.ExerciseId, out Guid exerciseId))
+        return Results.BadRequest();
+    if(!await db.SetExercise.AnyAsync(a => a.Id == id))
+        return Results.StatusCode(StatusCodes.Status416RangeNotSatisfiable);
+    if (!await db.Set.AnyAsync(a => a.SetId == setExercise.SetId))
+        return Results.StatusCode(StatusCodes.Status417ExpectationFailed);
+
+    var exercise = await db.Exercise.FirstOrDefaultAsync(f => f.ExerciseId == setExercise.ExerciseId);
+
+    if (exercise == null)
+        return Results.StatusCode(StatusCodes.Status417ExpectationFailed);
+
+    db.SetExercise.Update(setExercise);
+    await db.SaveChangesAsync();
+
+    var result = new SetExerciseList()
+    {
+        ExerciseId = setExercise.ExerciseId,
+        Id = setExercise.Id,
+        Unit = setExercise.Unit,
+        Count = setExercise.Count,
+        Duration = setExercise.Duration,
+        ExerciseName = exercise.Name,
+        Description = exercise.Description,
+        ImageUrl = exercise.ImageUrl,
+        Order = setExercise.Order,
+        SetId = setExercise.SetId
+    };
+
+    return Results.Created($"/set-exercises/{setExercise.SetId}/{setExercise.Id}", result);
+})
+.WithName("AddSetExercise")
+.WithTags("Set exercises")
+.ProducesValidationProblem(StatusCodes.Status401Unauthorized)
+.ProducesValidationProblem(StatusCodes.Status400BadRequest)
+.ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
+.ProducesValidationProblem(StatusCodes.Status417ExpectationFailed)
+.Produces<SetExerciseList>(StatusCodes.Status201Created);
+
+app.MapDelete("/set-exercises/{setId}/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, string setId, string id, StriborDb db, IConfiguration cfg) =>
+{
+    if (String.IsNullOrEmpty(apiKey) || cfg["apiKey"] != apiKey)
+        return Results.Unauthorized();
+    if (String.IsNullOrEmpty(setId) || !Guid.TryParse(setId, out Guid guidSetId))
+        return Results.BadRequest();
+    if (String.IsNullOrEmpty(id) || !Guid.TryParse(id, out Guid setExerciseId))
+        return Results.BadRequest();
+
+    var setExercise = await db.SetExercise.FirstOrDefaultAsync(f => f.Id == id);
+
+    if (setExercise == null)
+        return Results.StatusCode(StatusCodes.Status417ExpectationFailed);
+
+    db.SetExercise.Remove(setExercise);
+    await db.SaveChangesAsync();
+    return Results.Ok();
+})
+.WithName("DeleteSetExercise")
+.WithTags("Set exercises")
+.ProducesValidationProblem(StatusCodes.Status401Unauthorized)
+.ProducesValidationProblem(StatusCodes.Status400BadRequest)
+.ProducesValidationProblem(StatusCodes.Status417ExpectationFailed)
+.Produces(StatusCodes.Status200OK);
 #endregion
 
 #region "Excercise"
-app.MapGet("/excercise", async (StriborDb db, IConfiguration cfg) =>
+app.MapGet("/exercise", async (StriborDb db, IConfiguration cfg) =>
 {
-    var excercises = await db.Exercise.ToListAsync();
+    var exercises = await db.Exercise.ToListAsync();
 
-    return Results.Ok(excercises);
+    exercises.OrderBy(o => o.Name);
+
+    return Results.Ok(exercises);
 })
 .WithName("GetAllExercises")
-.WithTags("Excercise")
+.WithTags("Exercise")
 .Produces<List<Exercise>>(StatusCodes.Status200OK);
 
-app.MapPost("/excercise", async ([FromHeader(Name = "x-api-key")] string apiKey, Exercise exercise, StriborDb db, IConfiguration cfg) =>
+app.MapPost("/exercise", async ([FromHeader(Name = "x-api-key")] string apiKey, Exercise exercise, StriborDb db, IConfiguration cfg) =>
 {
     if (String.IsNullOrEmpty(apiKey) || cfg["apiKey"] != apiKey)
         return Results.Unauthorized();
@@ -453,13 +611,13 @@ app.MapPost("/excercise", async ([FromHeader(Name = "x-api-key")] string apiKey,
     await db.SaveChangesAsync();
     return Results.Created($"/exercise/{exercise.ExerciseId}", exercise);
 })
-.WithName("AddExcercise")
-.WithTags("Excercise")
+.WithName("AddExercise")
+.WithTags("Exercise")
 .ProducesValidationProblem(StatusCodes.Status401Unauthorized)
 .ProducesValidationProblem(StatusCodes.Status400BadRequest)
-.Produces(StatusCodes.Status201Created);
+.Produces<Exercise>(StatusCodes.Status201Created);
 
-app.MapPut("/excercise/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, string id, Exercise exercise, StriborDb db, IConfiguration cfg) =>
+app.MapPut("/exercise/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, string id, Exercise exercise, StriborDb db, IConfiguration cfg) =>
 {
     if (String.IsNullOrEmpty(apiKey) || cfg["apiKey"] != apiKey)
         return Results.Unauthorized();
@@ -476,15 +634,38 @@ app.MapPut("/excercise/{id}", async ([FromHeader(Name = "x-api-key")] string api
 
     db.Exercise.Update(exercise);
     await db.SaveChangesAsync();
-    return Results.Accepted($"/excercise/{exercise.ExerciseId}", exercise);
+    return Results.Accepted($"/exercise/{exercise.ExerciseId}", exercise);
 
 })
-.WithName("UpdateExcercise")
-.WithTags("Excercise")
+.WithName("UpdateExercise")
+.WithTags("Exercise")
 .ProducesValidationProblem(StatusCodes.Status401Unauthorized)
 .ProducesValidationProblem(StatusCodes.Status400BadRequest)
 .ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
-.Produces(StatusCodes.Status202Accepted);
+.Produces<Exercise>(StatusCodes.Status202Accepted);
+
+app.MapDelete("/exercise/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, string id, StriborDb db, IConfiguration cfg) =>
+{
+    if (String.IsNullOrEmpty(apiKey) || cfg["apiKey"] != apiKey)
+        return Results.Unauthorized();
+    if (String.IsNullOrEmpty(id) || !Guid.TryParse(id, out Guid excerciseId))
+        return Results.BadRequest();
+
+    var exercise = await db.Exercise.FirstOrDefaultAsync(f => f.ExerciseId == id);
+
+    if (exercise == null)
+        return Results.StatusCode(StatusCodes.Status416RangeNotSatisfiable);
+
+    db.Exercise.Remove(exercise);
+    await db.SaveChangesAsync();
+    return Results.Ok();
+})
+.WithName("DeleteExercise")
+.WithTags("Exercise")
+.ProducesValidationProblem(StatusCodes.Status401Unauthorized)
+.ProducesValidationProblem(StatusCodes.Status400BadRequest)
+.ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
+.Produces(StatusCodes.Status200OK);
 #endregion
 
 #region "ExerciseMuscles"
@@ -610,6 +791,28 @@ app.MapPut("/muscle/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey
 .ProducesValidationProblem(StatusCodes.Status417ExpectationFailed)
 .Produces(StatusCodes.Status202Accepted);
 
+app.MapDelete("/muscle/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, string id, StriborDb db, IConfiguration cfg) =>
+{
+    if (String.IsNullOrEmpty(apiKey) || cfg["apiKey"] != apiKey)
+        return StatusCodes.Status401Unauthorized;
+    if (String.IsNullOrEmpty(id) || !Guid.TryParse(id, out Guid setId))
+        return StatusCodes.Status400BadRequest;
+
+    var muscle = await db.Muscle.FirstOrDefaultAsync(f => f.MuscleId == id);
+
+    if (muscle == null)
+        return StatusCodes.Status416RangeNotSatisfiable;
+
+    db.Muscle.Remove(muscle);
+    await db.SaveChangesAsync();
+    return StatusCodes.Status200OK;
+})
+.WithName("DeleteMuscle")
+.WithTags("Muscle")
+.ProducesValidationProblem(StatusCodes.Status401Unauthorized)
+.ProducesValidationProblem(StatusCodes.Status400BadRequest)
+.ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
+.Produces(StatusCodes.Status200OK);
 #endregion
 
 #region "MuscleCategory"
@@ -673,6 +876,30 @@ app.MapPut("/muscle-category/{id}", async ([FromHeader(Name = "x-api-key")] stri
 .ProducesValidationProblem(StatusCodes.Status400BadRequest)
 .ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
 .Produces(StatusCodes.Status202Accepted);
+
+app.MapDelete("/muscle-category/{id}", async ([FromHeader(Name = "x-api-key")] string apiKey, string id, StriborDb db, IConfiguration cfg) =>
+{
+    if (String.IsNullOrEmpty(apiKey) || cfg["apiKey"] != apiKey)
+        return Results.Unauthorized();
+    if (String.IsNullOrEmpty(id) || !Guid.TryParse(id, out Guid muscleCategoryId))
+        return Results.BadRequest();
+
+    var muscleCategory = await db.MuscleCategory.FirstOrDefaultAsync(f => f.MuscleCategoryId == id);
+
+    if (muscleCategory ==  null)
+        return Results.StatusCode(StatusCodes.Status416RangeNotSatisfiable);
+
+    db.MuscleCategory.Remove(muscleCategory);
+    await db.SaveChangesAsync();
+    return Results.Ok();
+
+})
+.WithName("DeleteMuscleCategory")
+.WithTags("Muscle category")
+.ProducesValidationProblem(StatusCodes.Status401Unauthorized)
+.ProducesValidationProblem(StatusCodes.Status400BadRequest)
+.ProducesValidationProblem(StatusCodes.Status416RangeNotSatisfiable)
+.Produces(StatusCodes.Status200OK);
 #endregion
 
 app.Run();

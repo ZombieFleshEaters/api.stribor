@@ -115,8 +115,10 @@ namespace api.stribor
     public class SetExerciseList
     {
         [Required]
+        public string Id { get; set; }
+
+        [Required]
         public string SetId { get; set; }
-        public string SetName { get; set; }
 
         [Required]
         public string ExerciseId { get; set; }
